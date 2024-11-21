@@ -15,8 +15,14 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import PasswordInput from "../inputs/PasswordInput";
+import { useUser } from "@/hooks/stores/useUserStore";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export const RegisterForm = () => {
+  const { onSave } = useUser();
+  const router = useRouter();
+
   const form = useForm<Register>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -27,7 +33,18 @@ export const RegisterForm = () => {
   });
 
   const onSubmit = (values: Register) => {
-    console.log(values);
+    if (typeof window !== "undefined") {
+      const existingUsers = JSON.parse(sessionStorage.getItem("users") || "[]");
+
+      existingUsers.push(values);
+
+      sessionStorage.setItem("users", JSON.stringify(existingUsers));
+    }
+    onSave(values);
+    form.reset();
+    toast.success("User created");
+
+    router.push("/login");
   };
 
   const isFormValid = form.formState.isValid;
