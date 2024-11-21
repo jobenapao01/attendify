@@ -3,6 +3,7 @@
 import { Login, loginSchema } from "@/schemas/login-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import Cookies from "js-cookie";
 import {
   Form,
   FormControl,
@@ -15,8 +16,13 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import PasswordInput from "../inputs/PasswordInput";
+import { useUser } from "@/hooks/stores/useUserStore";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export const LoginForm = () => {
+  const router = useRouter();
+
   const form = useForm<Login>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -26,7 +32,25 @@ export const LoginForm = () => {
   });
 
   const onSubmit = (values: Login) => {
-    console.log(values);
+    const parsedUser = JSON.parse(sessionStorage.getItem("users") || "[]");
+
+    const isUserExists = parsedUser.some(
+      (user: Login) =>
+        user.matrixNumber === values.matrixNumber &&
+        user.password === values.password
+    );
+
+    if (isUserExists && typeof window !== "undefined") {
+      sessionStorage.setItem("user", JSON.stringify(values.matrixNumber));
+
+      Cookies.set("user", values.matrixNumber, { expires: 7 });
+      router.push("/dashboard");
+      toast.success("Logged in");
+    } else {
+      toast.error(
+        "User does not exists. Please make sure that you have registered."
+      );
+    }
   };
 
   const isFormValid = form.formState.isValid;
